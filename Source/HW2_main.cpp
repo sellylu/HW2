@@ -1,10 +1,9 @@
-#include<opencv2\opencv.hpp>
 #include<iostream>
 #include"ImgProc.hpp"
 
 int main(int argc, char* argv[]){
 	std::cout << argv[0] << std::endl;
-	std::string config_path = "../config.csv";
+	std::string config_path = "../Config.csv";
 	if (argc > 1)
 		config_path = argv[1];
 	ImgProc EXP1(config_path);

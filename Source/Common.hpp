@@ -1,20 +1,32 @@
 #pragma once
-#include<opencv2\opencv.hpp>
+#include<opencv.hpp>
 //Config Parsing Utilities
-std::vector<std::string> Token(std::string in, char delimeter){
-	std::istringstream ss(in);
-	std::vector<std::string> elements;
-	std::string item;
-	while (getline(ss, item, delimeter)){
-		elements.push_back(item);
-	}
-	return elements;
-}
 template <class T>	T ConvertFromString(const std::string &s) {
 	T value;
 	std::stringstream ss(s);
 	ss >> value;
 	return value;
+}
+std::vector<int> IntToken(std::string in, char delimeter){
+	std::istringstream iss(in);
+	std::vector<int> elements;
+	std::string item;
+	while (getline(iss, item, delimeter)){
+		int value;
+		std::stringstream ss(item);
+		ss >> value;
+		elements.push_back(value);
+	}
+	return elements;
+}
+std::vector<std::string> Token(std::string in, char delimeter) {
+	std::istringstream iss(in);
+	std::vector<std::string> elements;
+	std::string item;
+	while (getline(iss, item, delimeter)){
+		elements.push_back(item);
+	}
+	return elements;
 }
 int padding(cv::Mat* input, cv::Mat* pad, int step){
 	if (!pad->empty())
