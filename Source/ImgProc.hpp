@@ -37,6 +37,7 @@ public:
 	int box_filter(std::vector<std::string> splitted_cmd);
 	int nonlinear_filter(std::vector<std::string> splitted_cmd, int type);
 	int linear_filter(std::vector<std::string> splitted_cmd);
+	int sobel_filter(std::vector<std::string> splitted_cmd);
 	void Convolution2D(int offset, cv::Mat *pad);
 
 };
@@ -48,12 +49,10 @@ ImgProc::ImgProc(std::string config_path_in){
 		isExist = true;
 		std::cout << "%% Parsing config file \" " << config_path_in << "\"" << std::endl;
 		std::string raw_line;
-		while (!config_file.fail()){
-			config_file >> raw_line;
-			config_file.ignore();
+		while (getline(config_file, raw_line)){
 			std::vector<std::string> splitted_string = Token(raw_line, ',');
 			if (splitted_string.size() > 0){
-				if (splitted_string[0] == "#")
+				if (raw_line[0] == '#')
 					std::cout << raw_line << std::endl;
 				else{
 					if (splitted_string[0] == "input_path"){
@@ -69,12 +68,7 @@ ImgProc::ImgProc(std::string config_path_in){
 						Mat_num = ConvertFromString<int>(splitted_string[1]);
 					}
 					else if (splitted_string[0] == "Command:"){
-						while (!config_file.fail()) {
-							config_file >> raw_line;
-							config_file.ignore();
-							if (splitted_string[0] == "#")
-								std::cout << raw_line << std::endl;
-							else
+						while (getline(config_file, raw_line)){
 								Cmds.push_back(raw_line);
 						}
 					}
@@ -104,8 +98,8 @@ void ImgProc::print_cmd(){
 
 
 int ImgProc::read_grayscale(std::vector<std::string> splitted_cmd){
-	if (splitted_cmd.size() != 3){
-		std::cout << "%% Error: Wrong cmd format" << std::endl;
+	if (splitted_cmd.size() != 4){
+		std::cout << "%% Error: Wrong cmd format in read" << std::endl;
 		return 0;
 	}
 	int object = ConvertFromString<int>(splitted_cmd[1]);
@@ -121,7 +115,7 @@ int ImgProc::read_grayscale(std::vector<std::string> splitted_cmd){
 	return 1;
 }
 int ImgProc::show_img(std::vector<std::string> splitted_cmd){
-	if (splitted_cmd.size() != 3){
+	if (splitted_cmd.size() != 4){
 		std::cout << "%% Error: Wrong cmd format" << std::endl;
 		return 0;
 	}
@@ -136,7 +130,7 @@ int ImgProc::show_img(std::vector<std::string> splitted_cmd){
 	}
 	cv::imshow(splitted_cmd[2], Matvec[object]);
 	cv::imwrite(output_path + splitted_cmd[2] + ".png", Matvec[object]);
-	cvWaitKey(10);
+	cvWaitKey();
 	return 1;
 }
 int ImgProc::box_filter(std::vector<std::string> splitted_cmd){
@@ -240,6 +234,30 @@ int ImgProc::linear_filter(std::vector<std::string> splitted_cmd) {
 	return 1;
 }
 
+int ImgProc::sobel_filter(std::vector<std::string> splitted_cmd) {
+	if(splitted_cmd.size() != 4) {
+		std::cout << "%% Error: Wrong cmd format" << std::endl;
+		return 0;
+	}
+	int sobelx = ConvertFromString<int>(splitted_cmd[1]);
+	int sobely = sobelx+1;
+	int object = ConvertFromString<int>(splitted_cmd[2]);
+
+	Matvec[object] = cv::Mat(Matvec[sobelx].size(), Matvec[sobelx].type());
+	for(int i = 0; i < Matvec[object].rows; i++) {
+		uchar *obj_ptr = Matvec[object].ptr(i);
+		uchar *x_ptr = Matvec[sobelx].ptr(i);
+		uchar *y_ptr = Matvec[sobely].ptr(i);
+		for(int j = 0; j < Matvec[object].cols; j++) {
+			*obj_ptr++ = sqrt(*x_ptr * *x_ptr + *y_ptr * *y_ptr);
+			x_ptr++;
+			y_ptr++;
+		}
+	}
+	return 1;
+}
+
+
 void ImgProc::Convolution2D(int offset, cv::Mat *pad) {
 	int size = (int)filter.size();
 	int sum, num;
@@ -266,56 +284,50 @@ void ImgProc::Convolution2D(int offset, cv::Mat *pad) {
 void ImgProc::main_flow(){
 	//Create Mat objects
 	cv::Mat A;
-	//Performance_Record PR;
 	for (int i = 0; i < Mat_num; i++){
 		Matvec.push_back(A);
 	}
+	
 	int i;
 	for (i = 0; i < Cmds.size(); i++){
 		//parse cmd
-		std::cout << "%% " << Cmds[i] << " ..." << std::endl;
-		std::vector<std::string> splitted_cmd = Token(Cmds[i], ',');
-		if (splitted_cmd[0] == "read_grayscale"){
-			if (!read_grayscale(splitted_cmd))
-				break;
-		}
-		else if (splitted_cmd[0] == "show_img"){
-			if (!show_img(splitted_cmd))
-				break;
-		}
-		else if (splitted_cmd[0] == "box_filter"){
-//			PR.set_start();
-			assert(box_filter(splitted_cmd));
-//			PR.set_end();
-		}
-		else if (splitted_cmd[0] == "median_filter") {
-			assert(nonlinear_filter(splitted_cmd, MEDIAN));
-		}
-		else if (splitted_cmd[0] == "max_filter") {
-			assert(nonlinear_filter(splitted_cmd, MAX));
-		}
-		else if (splitted_cmd[0] == "min_filter") {
-			assert(nonlinear_filter(splitted_cmd, MIN));
-		}
-		else if (splitted_cmd[0] == "linear_filter") {
-			break;
-		}
+		if(Cmds[i][0] == '#') {
+			cv::destroyAllWindows();
+			std::cout << Cmds[i] << std::endl;
+		} else {
+			std::cout << "%% " << Cmds[i].substr(0,Cmds[i].size()-1) << " ..." << std::endl;
+			std::vector<std::string> splitted_cmd = Token(Cmds[i], ',');
+			splitted_cmd[3] = splitted_cmd[3].substr(0,splitted_cmd[3].size()-1);
 			
-	}
-	cv::waitKey(0);
-	cv::destroyAllWindows();
-	for (; i < Cmds.size(); i++){
-		//parse cmd
-		std::cout << "%% " << Cmds[i] << " ..." << std::endl;
-		std::vector<std::string> splitted_cmd = Token(Cmds[i], ',');
-		if (splitted_cmd[0] == "show_img"){
-			if (!show_img(splitted_cmd))
-				break;
+			if (splitted_cmd[0] == "read_grayscale"){
+				if (!read_grayscale(splitted_cmd))
+					break;
+			}
+			else if (splitted_cmd[0] == "show_img"){
+				if (!show_img(splitted_cmd))
+					break;
+			}
+			else if (splitted_cmd[0] == "box_filter"){
+				assert(box_filter(splitted_cmd));
+			}
+			else if (splitted_cmd[0] == "median_filter") {
+				assert(nonlinear_filter(splitted_cmd, MEDIAN));
+			}
+			else if (splitted_cmd[0] == "max_filter") {
+				assert(nonlinear_filter(splitted_cmd, MAX));
+			}
+			else if (splitted_cmd[0] == "min_filter") {
+				assert(nonlinear_filter(splitted_cmd, MIN));
+			}
+			else if (splitted_cmd[0] == "linear_filter") {
+				assert(linear_filter(splitted_cmd));
+			}
+			else if (splitted_cmd[0] == "sobel_filter") {
+				assert(sobel_filter(splitted_cmd));
+			}
+			
 		}
-		else if (splitted_cmd[0] == "linear_filter") {
-			assert(linear_filter(splitted_cmd));
-		}
 	}
-	cv::waitKey(0);
-
+	
+	cv::waitKey();
 }
