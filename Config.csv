@@ -8,21 +8,32 @@ Mat_num,5,,
 Command:,,,
 read_grayscale,0,Giovanni_Paolo.jpg,
 show_img,0,original,
+#Linear Filter,,,
+box_filter,0,1,3
+show_img,1,box,
+linear_filter,0,2,weighted.txt
+show_img,2,weighted,
+#Nonlinear Filter,,,
 median_filter,0,1,1
 show_img,1,median,
 max_filter,0,2,1
 show_img,2,max,
 min_filter,0,3,1
 show_img,3,min,
-box_filter,0,1,15
+#Special Linear Filter - Gaussian,,,
+box_filter,0,1,3
 show_img,1,box,
 linear_filter,0,2,Gaussian.txt
 show_img,2,Gaussian,
+#Special Linear Filter - Laplacian,,,
 linear_filter,0,1,laplacian1.txt
 show_img,1,laplacian1,
 linear_filter,0,2,laplacian2.txt
 show_img,2,laplacian2,
+#Special Linear Filter - Sobel,,,
 linear_filter,0,1,sobelx.txt
 show_img,1,sobelx,
 linear_filter,0,2,sobely.txt
 show_img,2,sobely,
+sobel_filter,1,3,
+show_img,3,sobel,

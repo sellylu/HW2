@@ -7,8 +7,7 @@
 #define clip(x) (x<=255?x>=0?x:0:255)
 enum {MEDIAN, MAX, MIN};
 
-template <class T>
-void insertion( std::vector<T> &cont, T value ) {
+template<class T> void insertion( std::vector<T> &cont, T value ) {
 	typename std::vector<T>::iterator it = std::upper_bound( cont.begin(), cont.end(), value, std::less<T>() );
 	cont.insert( it, value );
 }
